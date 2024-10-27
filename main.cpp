@@ -5,11 +5,12 @@
 #include <thread>
 #include <algorithm>
 
-const int TILE_SIZE = 40; // Kích thước mỗi ô
+int block_size = 40; // Kích thước mỗi ô
 const int MAP_WIDTH = 13; // Độ rộng bản đồ
 const int MAP_HEIGHT = 13; // Chiều cao bản đồ
 int playerX = 0; // Vị trí ban đầu của nhân vật
 int playerY = 0;
+
 bool isMoving = false; //trạng thái di chuyển
 // Ma trận bản đồ
 std::vector<std::vector<int>> map = {
@@ -79,7 +80,7 @@ void renderMap(SDL_Renderer* renderer, SDL_Texture* solidTexture, SDL_Texture* s
                 texture = solidTexture;
             }
             if (texture) {
-                SDL_Rect dstRect = { x * TILE_SIZE, y * TILE_SIZE, TILE_SIZE, TILE_SIZE };
+                SDL_Rect dstRect = { x * block_size, y * block_size, block_size, block_size };
                 SDL_RenderCopy(renderer, texture, nullptr, &dstRect);
             }
         }
@@ -89,14 +90,14 @@ void renderMap(SDL_Renderer* renderer, SDL_Texture* solidTexture, SDL_Texture* s
 // Vẽ nhân vật
 void renderPlayer(SDL_Renderer* renderer, SDL_Texture** playerTextures) {
     SDL_Texture* currentTexture = playerTextures[playerDirection * 2 + playerFrame]; // Chọn texture dựa trên hướng và khung hình
-    SDL_Rect playerRect = { playerX * TILE_SIZE, playerY * TILE_SIZE, TILE_SIZE, TILE_SIZE };
+    SDL_Rect playerRect = { playerX * block_size, playerY * block_size, block_size, block_size };
     SDL_RenderCopy(renderer, currentTexture, nullptr, &playerRect); // Vẽ hình ảnh nhân vật
 }
 
 // Vẽ bom
 void renderBombs(SDL_Renderer* renderer, SDL_Texture* bombTexture) {
     for (const Bomb& bomb : bombs) {
-        SDL_Rect bombRect = { bomb.x * TILE_SIZE, bomb.y * TILE_SIZE, TILE_SIZE, TILE_SIZE };
+        SDL_Rect bombRect = { bomb.x * block_size, bomb.y * block_size, block_size, block_size };
         SDL_RenderCopy(renderer, bombTexture, nullptr, &bombRect); // Vẽ bom
     }
 }
@@ -106,7 +107,7 @@ void renderExplosions(SDL_Renderer* renderer, SDL_Texture* explosionTexture) {
     auto now = std::chrono::steady_clock::now();
     for (const Explosion& explosion : explosions) {
         // Vẽ hiệu ứng nổ
-        SDL_Rect explosionRect = { explosion.x * TILE_SIZE, explosion.y * TILE_SIZE, TILE_SIZE, TILE_SIZE };
+        SDL_Rect explosionRect = { explosion.x * block_size, explosion.y * block_size, block_size, block_size };
         SDL_RenderCopy(renderer, explosionTexture, nullptr, &explosionRect); // Vẽ hiệu ứng nổ
 
         // Kiểm tra thời gian hiển thị (ví dụ: 1 giây)
@@ -217,7 +218,7 @@ void explodeBomb(int x, int y, SDL_Texture* explosionTexture, SDL_Renderer* rend
 
 // Đặt bom
 void placeBomb(int x, int y) {
-    Bomb newBomb = { x, y, 1.5, std::chrono::steady_clock::now() }; // Đặt thời gian nổ là 3 giây
+    Bomb newBomb = { x, y, 1, std::chrono::steady_clock::now() }; // Đặt thời gian nổ là 3 giây
     bombs.push_back(newBomb);
 }
 
@@ -240,8 +241,12 @@ int main(int argc, char* argv[]) {
         std::cerr << "SDL could not initialize! SDL_Error: " << SDL_GetError() << std::endl;
         return -1;
     }
+    SDL_DisplayMode win_size;
+    SDL_GetCurrentDisplayMode(0, &win_size);
+    int win_height = win_size.h;
+    block_size = win_height / (MAP_HEIGHT + 1);
 
-    SDL_Window* window = SDL_CreateWindow("Bomberman", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, MAP_WIDTH * TILE_SIZE, MAP_HEIGHT * TILE_SIZE, SDL_WINDOW_SHOWN);
+    SDL_Window* window = SDL_CreateWindow("Bomberman", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, MAP_WIDTH * block_size, MAP_HEIGHT * block_size, SDL_WINDOW_SHOWN);
     if (!window) {
         std::cerr << "Window could not be created! SDL_Error: " << SDL_GetError() << std::endl;
         SDL_Quit();
