@@ -5,7 +5,7 @@
 #include <thread>
 #include <algorithm>
 
-int block_size = 40; // Kích thước mỗi ô
+int block_size = 32; // Kích thước mỗi ô mặc định ban đầu
 const int MAP_WIDTH = 13; // Độ rộng bản đồ
 const int MAP_HEIGHT = 13; // Chiều cao bản đồ
 int playerX = 0; // Vị trí ban đầu của nhân vật
