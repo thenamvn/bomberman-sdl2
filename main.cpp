@@ -1,4 +1,5 @@
 #include <SDL2/SDL.h>
+#include <SDL2/SDL_image.h>
 #include <vector>
 #include <iostream>
 #include <chrono>
@@ -218,7 +219,7 @@ void explodeBomb(int x, int y, SDL_Texture* explosionTexture, SDL_Renderer* rend
 
 // Đặt bom
 void placeBomb(int x, int y) {
-    Bomb newBomb = { x, y, 1, std::chrono::steady_clock::now() }; // Đặt thời gian nổ là 3 giây
+    Bomb newBomb = { x, y, 1.125, std::chrono::steady_clock::now() }; // Đặt thời gian nổ là 3 giây
     bombs.push_back(newBomb);
 }
 
@@ -252,14 +253,17 @@ int main(int argc, char* argv[]) {
         SDL_Quit();
         return -1;
     }
-
-    SDL_Renderer* renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED);
-    if (!renderer) {
-        std::cerr << "Renderer could not be created! SDL_Error: " << SDL_GetError() << std::endl;
+    SDL_Surface* iconSurface = IMG_Load("./materials/icon.png");
+    if (iconSurface == NULL) {
+         std::cerr << "Load icon failed! SDL_Error: " << SDL_GetError() << std::endl;
         SDL_DestroyWindow(window);
         SDL_Quit();
         return -1;
     }
+
+    SDL_Renderer* renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED);
+    SDL_SetWindowIcon(window, iconSurface);
+    SDL_FreeSurface(iconSurface);
 
     // Tải hình ảnh cho nhân vật
     SDL_Texture* playerTextures[4][2]; // 4 hướng, 2 khung hình cho mỗi hướng
