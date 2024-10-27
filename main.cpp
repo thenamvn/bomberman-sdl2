@@ -5,11 +5,11 @@
 #include <thread>
 #include <algorithm>
 
-const int TILE_SIZE = 32; // Kích thước mỗi ô
+const int TILE_SIZE = 40; // Kích thước mỗi ô
 const int MAP_WIDTH = 13; // Độ rộng bản đồ
 const int MAP_HEIGHT = 13; // Chiều cao bản đồ
-int playerX = 1; // Vị trí ban đầu của nhân vật
-int playerY = 1;
+int playerX = 0; // Vị trí ban đầu của nhân vật
+int playerY = 0;
 bool isMoving = false; //trạng thái di chuyển
 // Ma trận bản đồ
 std::vector<std::vector<int>> map = {
@@ -217,7 +217,7 @@ void explodeBomb(int x, int y, SDL_Texture* explosionTexture, SDL_Renderer* rend
 
 // Đặt bom
 void placeBomb(int x, int y) {
-    Bomb newBomb = { x, y, 3.0f, std::chrono::steady_clock::now() }; // Đặt thời gian nổ là 3 giây
+    Bomb newBomb = { x, y, 1.5, std::chrono::steady_clock::now() }; // Đặt thời gian nổ là 3 giây
     bombs.push_back(newBomb);
 }
 
