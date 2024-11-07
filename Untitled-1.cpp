@@ -5,7 +5,6 @@
 #include <chrono>
 #include <thread>
 #include <algorithm>
-#include <SDL2/SDL_ttf.h>
 
 int block_size = 32; // Kích thước mỗi ô mặc định ban đầu
 const int MAP_WIDTH = 13; // Độ rộng bản đồ
@@ -14,8 +13,6 @@ int playerX = 0; // Vị trí ban đầu của nhân vật 1
 int playerY = 0;
 int player2X = 12; // Vị trí ban đầu của nhân vật 2
 int player2Y = 12;
-bool isPlayer1Dead = false;
-bool isPlayer2Dead = false;
 
 bool isMoving = false; // trạng thái di chuyển cho nhân vật 1
 bool isMoving2 = false; // trạng thái di chuyển cho nhân vật 2
@@ -138,14 +135,10 @@ bool canMove(int newX, int newY) {
 void explodeBomb(int x, int y, SDL_Texture* explosionTexture, SDL_Renderer* renderer) {
     // Kiểm tra xem bom có trúng nhân vật không
     if (playerX == x && playerY == y) {
-        std::cout << "Game Over! Player 1 was caught in the explosion!" << std::endl;
-        isPlayer1Dead = true;
-        isMoving = false;
-    } else if (player2X == x && player2Y == y) {
-        std::cout << "Game Over! Player 2 was caught in the explosion!" << std::endl;
-        isPlayer2Dead = true;
-        isMoving2 = false;
+        std::cout << "Game Over! You were caught in the explosion!" << std::endl;
+        exit(0); // Kết thúc trò chơi
     }
+
     // Thêm hiệu ứng nổ vào danh sách
     explosions.push_back({x, y, std::chrono::steady_clock::now()});
 
@@ -161,15 +154,9 @@ void explodeBomb(int x, int y, SDL_Texture* explosionTexture, SDL_Renderer* rend
 
             // Kiểm tra xem vị trí nổ có trùng với vị trí người chơi không
             if (playerX == x && playerY == y - i) {
-                std::cout << "Game Over! Player 1 was caught in the explosion!" << std::endl;
-                isPlayer1Dead = true;
-                isMoving = false;
-            } else if (player2X == x && player2Y == y - i) {
-                std::cout << "Game Over! Player 2 was caught in the explosion!" << std::endl;
-                isPlayer2Dead = true;
-                isMoving2 = false;
+                std::cout << "Game Over! You were caught in the explosion!" << std::endl;
+                exit(0); // Kết thúc trò chơi
             }
-
         } else {
             break; // Ra ngoài biên
         }
@@ -187,13 +174,8 @@ void explodeBomb(int x, int y, SDL_Texture* explosionTexture, SDL_Renderer* rend
 
             // Kiểm tra xem vị trí nổ có trùng với vị trí người chơi không
             if (playerX == x && playerY == y + i) {
-                std::cout << "Game Over! Player 1 was caught in the explosion!" << std::endl;
-                isPlayer1Dead = true;
-                isMoving = false;
-            } else if (player2X == x && player2Y == y + i) {
-                std::cout << "Game Over! Player 2 was caught in the explosion!" << std::endl;
-                isPlayer2Dead = true;
-                isMoving2 = false;
+                std::cout << "Game Over! You were caught in the explosion!" << std::endl;
+                exit(0); // Kết thúc trò chơi
             }
         } else {
             break; // Ra ngoài biên
@@ -211,15 +193,9 @@ void explodeBomb(int x, int y, SDL_Texture* explosionTexture, SDL_Renderer* rend
             explosions.push_back({x - i, y, std::chrono::steady_clock::now()}); // Thêm hiệu ứng nổ
 
             // Kiểm tra xem vị trí nổ có trùng với vị trí người chơi không
-            // Kiểm tra xem vị trí nổ có trùng với vị trí người chơi không
             if (playerX == x - i && playerY == y) {
-                std::cout << "Game Over! Player 1 was caught in the explosion!" << std::endl;
-                isPlayer1Dead = true;
-                isMoving = false;
-            } else if (player2X == x - i && player2Y == y) {
-                std::cout << "Game Over! Player 2 was caught in the explosion!" << std::endl;
-                isPlayer2Dead = true;
-                isMoving2 = false;
+                std::cout << "Game Over! You were caught in the explosion!" << std::endl;
+                exit(0); // Kết thúc trò chơi
             }
         } else {
             break; // Ra ngoài biên
@@ -238,13 +214,8 @@ void explodeBomb(int x, int y, SDL_Texture* explosionTexture, SDL_Renderer* rend
 
             // Kiểm tra xem vị trí nổ có trùng với vị trí người chơi không
             if (playerX == x + i && playerY == y) {
-                std::cout << "Game Over! Player 1 was caught in the explosion!" << std::endl;
-                isPlayer1Dead = true;
-                isMoving = false;
-            } else if (player2X == x + i && player2Y == y) {
-                std::cout << "Game Over! Player 2 was caught in the explosion!" << std::endl;
-                isPlayer2Dead = true;
-                isMoving2 = false;
+                std::cout << "Game Over! You were caught in the explosion!" << std::endl;
+                exit(0); // Kết thúc trò chơi
             }
         } else {
             break; // Ra ngoài biên
@@ -257,31 +228,6 @@ void placeBomb(int x, int y) {
     Bomb newBomb = { x, y, 1.125, std::chrono::steady_clock::now() }; // Đặt thời gian nổ là 1.125 giây
     bombs.push_back(newBomb);
 }
-
-// Hàm vẽ văn bản
-void renderText(SDL_Renderer* renderer, const char* text, int x, int y) {
-    // Tạo font
-    TTF_Font* font = TTF_OpenFont("./materials/font/arial.ttf", 24); // Đảm bảo đã tải SDL_ttf
-    if (!font) {
-        std::cerr << "Error loading font: " << TTF_GetError() << std::endl;
-        return;
-    }
-    
-    // Tạo surface từ văn bản
-    SDL_Color color = {255, 0, 0}; // Màu đỏ
-    SDL_Surface* surfaceMessage = TTF_RenderText_Solid(font, text, color);
-    SDL_Texture* message = SDL_CreateTextureFromSurface(renderer, surfaceMessage);
-    
-    // Vẽ văn bản
-    SDL_Rect messageRect = {x, y, surfaceMessage->w, surfaceMessage->h};
-    SDL_RenderCopy(renderer, message, NULL, &messageRect);
-    
-    // Giải phóng
-    SDL_DestroyTexture(message);
-    SDL_FreeSurface(surfaceMessage);
-    TTF_CloseFont(font);
-}
-
 
 // Cập nhật trạng thái bom
 void updateBombs(SDL_Renderer* renderer, SDL_Texture* explosionTexture) {
@@ -300,12 +246,6 @@ void updateBombs(SDL_Renderer* renderer, SDL_Texture* explosionTexture) {
 int main(int argc, char* argv[]) {
     if (SDL_Init(SDL_INIT_VIDEO) < 0) {
         std::cerr << "SDL could not initialize! SDL_Error: " << SDL_GetError() << std::endl;
-        return -1;
-    }
-        // Initialize SDL_ttf
-    if (TTF_Init() == -1) {
-        std::cerr << "TTF could not initialize! TTF_Error: " << TTF_GetError() << std::endl;
-        SDL_Quit(); // Clean up SDL
         return -1;
     }
     SDL_DisplayMode win_size;
@@ -390,11 +330,7 @@ int main(int argc, char* argv[]) {
                     case SDLK_s:    newY++; playerDirection = DOWN; isMoving = true; break;
                     case SDLK_a:    newX--; playerDirection = LEFT; isMoving = true; break;
                     case SDLK_d:    newX++; playerDirection = RIGHT; isMoving = true; break;
-                    case SDLK_SPACE:
-                        if (!isPlayer1Dead){
-                            placeBomb(playerX, playerY); // Đặt bom cho nhân vật 1
-                        }
-                        break;
+                    case SDLK_SPACE: placeBomb(playerX, playerY); break; // Đặt bom cho nhân vật 1
                 }
 
                 // Điều khiển cho nhân vật 2 (mũi tên)
@@ -403,11 +339,7 @@ int main(int argc, char* argv[]) {
                     case SDLK_DOWN:  newY2++; player2Direction = DOWN; isMoving2 = true; break;
                     case SDLK_LEFT:  newX2--; player2Direction = LEFT; isMoving2 = true; break;
                     case SDLK_RIGHT: newX2++; player2Direction = RIGHT; isMoving2 = true; break;
-                    case SDLK_KP_ENTER:
-                        if (!isPlayer2Dead){
-                            placeBomb(player2X, player2Y); // Đặt bom cho nhân vật 2
-                        }
-                        break;
+                    case SDLK_KP_ENTER: placeBomb(player2X, player2Y); break; // Đặt bom cho nhân vật 2
                 }
 
                 // Cập nhật vị trí cho nhân vật 1
@@ -462,48 +394,15 @@ int main(int argc, char* argv[]) {
 
         SDL_RenderClear(renderer);
         renderMap(renderer, solidTexture, stoneTexture);
-        // Vẽ nhân vật 1 nếu không chết
-        if (!isPlayer1Dead) {
-            renderPlayer(renderer, playerTextures, playerX, playerY, playerDirection, playerFrame);
-        }
-
-        // Vẽ nhân vật 2 nếu không chết
-        if (!isPlayer2Dead) {
-            renderPlayer(renderer, player2Textures, player2X, player2Y, player2Direction, player2Frame);
-        }
+        
+        // Vẽ nhân vật 1
+        renderPlayer(renderer, playerTextures, playerX, playerY, playerDirection, playerFrame);
+        
+        // Vẽ nhân vật 2
+        renderPlayer(renderer, player2Textures, player2X, player2Y, player2Direction, player2Frame);
         
         renderBombs(renderer, bombTexture);
         renderExplosions(renderer, explosionTexture);
-        // Trong vòng lặp chính hoặc nơi bạn muốn vẽ văn bản
-        if (isPlayer1Dead) {
-            // Tính toán kích thước văn bản
-            int textWidth, textHeight;
-            TTF_Font* font = TTF_OpenFont("./materials/font/arial.ttf", 24);
-            TTF_SizeText(font, "Player 1 is dead!", &textWidth, &textHeight);
-            TTF_CloseFont(font);
-
-            // Tính toán vị trí để vẽ văn bản ở giữa màn hình
-            int centerX = (MAP_WIDTH * block_size - textWidth) / 2; // Center X
-            int centerY = (MAP_HEIGHT * block_size - textHeight) / 2; // Center Y
-
-            // Gọi hàm vẽ văn bản
-            renderText(renderer, "Player 1 is dead!", centerX, centerY);
-        }
-
-        if (isPlayer2Dead) {
-            // Tính toán kích thước văn bản
-            int textWidth, textHeight;
-            TTF_Font* font = TTF_OpenFont("./materials/font/arial.ttf", 24);
-            TTF_SizeText(font, "Player 2 is dead!", &textWidth, &textHeight);
-            TTF_CloseFont(font);
-
-            // Tính toán vị trí để vẽ văn bản ở giữa màn hình
-            int centerX = (MAP_WIDTH * block_size - textWidth) / 2; // Center X
-            int centerY = (MAP_HEIGHT * block_size - textHeight) / 2; // Center Y
-
-            // Gọi hàm vẽ văn bản
-            renderText(renderer, "Player 2 is dead!", centerX, centerY);
-        }
         SDL_RenderPresent(renderer);
     }
 
