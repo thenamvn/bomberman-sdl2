@@ -245,7 +245,7 @@ int main(int argc, char* argv[]) {
     SDL_DisplayMode win_size;
     SDL_GetCurrentDisplayMode(0, &win_size);
     int win_height = win_size.h;
-    block_size = win_height / (MAP_HEIGHT + 1);
+    block_size = win_height / (MAP_HEIGHT + 2);
 
     SDL_Window* window = SDL_CreateWindow("Bomberman", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, MAP_WIDTH * block_size, MAP_HEIGHT * block_size, SDL_WINDOW_SHOWN);
     if (!window) {
