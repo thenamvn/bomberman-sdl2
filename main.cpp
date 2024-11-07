@@ -7,7 +7,7 @@
 #include <algorithm>
 #include <SDL2/SDL_ttf.h>
 
-int block_size = 32; // Kích thước mỗi ô mặc định ban đầu
+int block_size = 0; // Kích thước mỗi ô mặc định ban đầu
 const int MAP_WIDTH = 13; // Độ rộng bản đồ
 const int MAP_HEIGHT = 13; // Chiều cao bản đồ
 int playerX = 0; // Vị trí ban đầu của nhân vật 1
@@ -20,22 +20,36 @@ bool isPlayer2Dead = false;
 bool isMoving = false; // trạng thái di chuyển cho nhân vật 1
 bool isMoving2 = false; // trạng thái di chuyển cho nhân vật 2
 
+// Function to generate a random map
+void generateRandomMap(std::vector<std::vector<int>>& map) {
+    // Initialize the map with 1s (walkable paths)
+    for (int i = 0; i < MAP_WIDTH; ++i) {
+        for (int j = 0; j < MAP_WIDTH; ++j) {
+            map[i][j] = 1; // Set all to walkable
+        }
+    }
+
+    // Randomly set some cells to 0 (obstacles)
+    int numberOfObstacles = (MAP_WIDTH * MAP_WIDTH) / 4; // Set 25% of the cells as obstacles
+
+    srand(static_cast<unsigned int>(time(0))); // Seed for random number generation
+
+    for (int i = 0; i < numberOfObstacles; ++i) {
+        int x = rand() % MAP_WIDTH; // Random x coordinate
+        int y = rand() % MAP_WIDTH; // Random y coordinate
+
+        // Ensure that we don't overwrite an existing obstacle
+        while (map[y][x] == 0) {
+            x = rand() % MAP_WIDTH;
+            y = rand() % MAP_WIDTH;
+        }
+
+        map[y][x] = 0; // Set the cell to 0 (obstacle)
+    }
+}
+
 // Ma trận bản đồ
-std::vector<std::vector<int>> map = {
-    {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1},
-    {1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1},
-    {1, 1, 1, 0, 1, 1, 1, 1, 1, 0, 1, 1, 1},
-    {1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1},
-    {1, 1, 1, 0, 1, 1, 1, 1, 1, 0, 1, 1, 1},
-    {1, 0, 1, 0, 1, 0, 0, 0, 1, 0, 1, 0, 1},
-    {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1},
-    {1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1},
-    {1, 1, 1, 0, 1, 1, 1, 1, 1, 0, 1, 1, 1},
-    {1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1},
-    {1, 1, 1, 0, 1, 1, 1, 1, 1, 0, 1, 1, 1},
-    {1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1},
-    {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1}
-};
+std::vector<std::vector<int>> map(MAP_WIDTH, std::vector<int>(MAP_WIDTH));
 
 // Cấu trúc cho bom
 struct Bomb {
@@ -298,6 +312,7 @@ void updateBombs(SDL_Renderer* renderer, SDL_Texture* explosionTexture) {
 }
 
 int main(int argc, char* argv[]) {
+    generateRandomMap(map); // Tạo bản đồ ngẫu nhiên
     if (SDL_Init(SDL_INIT_VIDEO) < 0) {
         std::cerr << "SDL could not initialize! SDL_Error: " << SDL_GetError() << std::endl;
         return -1;
