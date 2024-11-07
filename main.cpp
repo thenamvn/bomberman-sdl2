@@ -391,7 +391,7 @@ int main(int argc, char* argv[]) {
                     case SDLK_a:    newX--; playerDirection = LEFT; isMoving = true; break;
                     case SDLK_d:    newX++; playerDirection = RIGHT; isMoving = true; break;
                     case SDLK_SPACE:
-                        if (!isPlayer1Dead){
+                        if (!isPlayer1Dead && !isPlayer2Dead){
                             placeBomb(playerX, playerY); // Đặt bom cho nhân vật 1
                         }
                         break;
@@ -404,7 +404,7 @@ int main(int argc, char* argv[]) {
                     case SDLK_LEFT:  newX2--; player2Direction = LEFT; isMoving2 = true; break;
                     case SDLK_RIGHT: newX2++; player2Direction = RIGHT; isMoving2 = true; break;
                     case SDLK_KP_ENTER:
-                        if (!isPlayer2Dead){
+                        if (!isPlayer2Dead && !isPlayer1Dead){
                             placeBomb(player2X, player2Y); // Đặt bom cho nhân vật 2
                         }
                         break;
