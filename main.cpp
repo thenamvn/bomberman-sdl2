@@ -7,7 +7,7 @@
 #include <algorithm>
 #include <SDL2/SDL_ttf.h>
 
-int block_size = 0; // Kích thước mỗi ô mặc định ban đầu
+int block_size = 32; // Kích thước mỗi ô mặc định ban đầu
 const int MAP_WIDTH = 13; // Độ rộng bản đồ
 const int MAP_HEIGHT = 13; // Chiều cao bản đồ
 int playerX = 0; // Vị trí ban đầu của nhân vật 1
@@ -16,10 +16,26 @@ int player2X = 12; // Vị trí ban đầu của nhân vật 2
 int player2Y = 12;
 bool isPlayer1Dead = false;
 bool isPlayer2Dead = false;
-
+bool bothDead = false;
 bool isMoving = false; // trạng thái di chuyển cho nhân vật 1
 bool isMoving2 = false; // trạng thái di chuyển cho nhân vật 2
 
+// // Ma trận bản đồ
+// std::vector<std::vector<int>> map = {
+//     {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1},
+//     {1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1},
+//     {1, 1, 1, 0, 1, 1, 1, 1, 1, 0, 1, 1, 1},
+//     {1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1},
+//     {1, 1, 1, 0, 1, 1, 1, 1, 1, 0, 1, 1, 1},
+//     {1, 0, 1, 0, 1, 0, 0, 0, 1, 0, 1, 0, 1},
+//     {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1},
+//     {1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1},
+//     {1, 1, 1, 0, 1, 1, 1, 1, 1, 0, 1, 1, 1},
+//     {1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1},
+//     {1, 1, 1, 0, 1, 1, 1, 1, 1, 0, 1, 1, 1},
+//     {1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1},
+//     {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1}
+// };
 // Function to generate a random map
 void generateRandomMap(std::vector<std::vector<int>>& map) {
     // Initialize the map with 1s (walkable paths)
@@ -48,9 +64,8 @@ void generateRandomMap(std::vector<std::vector<int>>& map) {
     }
 }
 
-// Ma trận bản đồ
-std::vector<std::vector<int>> map(MAP_WIDTH, std::vector<int>(MAP_WIDTH));
 
+std::vector<std::vector<int>> map(MAP_WIDTH, std::vector<int>(MAP_WIDTH));
 // Cấu trúc cho bom
 struct Bomb {
     int x;
@@ -150,118 +165,103 @@ bool canMove(int newX, int newY) {
 
 // Nổ bom
 void explodeBomb(int x, int y, SDL_Texture* explosionTexture, SDL_Renderer* renderer) {
-    // Kiểm tra xem bom có trúng nhân vật không
-    if (playerX == x && playerY == y) {
-        std::cout << "Game Over! Player 1 was caught in the explosion!" << std::endl;
-        isPlayer1Dead = true;
-        isMoving = false;
-    } else if (player2X == x && player2Y == y) {
-        std::cout << "Game Over! Player 2 was caught in the explosion!" << std::endl;
-        isPlayer2Dead = true;
-        isMoving2 = false;
-    }
-    // Thêm hiệu ứng nổ vào danh sách
-    explosions.push_back({x, y, std::chrono::steady_clock::now()});
+    // Danh sách các vị trí bị ảnh hưởng bởi vụ nổ
+    std::vector<std::pair<int, int>> affectedPositions;
+
+    // Thêm vị trí bom vào danh sách
+    affectedPositions.push_back({x, y});
 
     // Nổ lên trên
-    for (int i = 1; ; ++i) { // Vòng lặp vô hạn cho đến khi gặp địa hình
+    for (int i = 1; ; ++i) {
         if (y - i >= 0) {
             if (map[y - i][x] == 0) {
                 map[y - i][x] = 1; // Chuyển đổi thành stone
-                break; // Dừng lại nếu chạm địa hình
+                break;
             }
             map[y - i][x] = 1; // Chuyển đổi thành stone
-            explosions.push_back({x, y - i, std::chrono::steady_clock::now()}); // Thêm hiệu ứng nổ
-
-            // Kiểm tra xem vị trí nổ có trùng với vị trí người chơi không
-            if (playerX == x && playerY == y - i) {
-                std::cout << "Game Over! Player 1 was caught in the explosion!" << std::endl;
-                isPlayer1Dead = true;
-                isMoving = false;
-            } else if (player2X == x && player2Y == y - i) {
-                std::cout << "Game Over! Player 2 was caught in the explosion!" << std::endl;
-                isPlayer2Dead = true;
-                isMoving2 = false;
-            }
-
+            affectedPositions.push_back({x, y - i});
         } else {
-            break; // Ra ngoài biên
+            break;
         }
     }
 
     // Nổ xuống dưới
-    for (int i = 1; ; ++i) { // Vòng lặp vô hạn cho đến khi gặp địa hình
+    for (int i = 1; ; ++i) {
         if (y + i < MAP_HEIGHT) {
             if (map[y + i][x] == 0) {
                 map[y + i][x] = 1; // Chuyển đổi thành stone
-                break; // Dừng lại nếu chạm địa hình
+                break;
             }
             map[y + i][x] = 1; // Chuyển đổi thành stone
-            explosions.push_back({x, y + i, std::chrono::steady_clock::now()}); // Thêm hiệu ứng nổ
-
-            // Kiểm tra xem vị trí nổ có trùng với vị trí người chơi không
-            if (playerX == x && playerY == y + i) {
-                std::cout << "Game Over! Player 1 was caught in the explosion!" << std::endl;
-                isPlayer1Dead = true;
-                isMoving = false;
-            } else if (player2X == x && player2Y == y + i) {
-                std::cout << "Game Over! Player 2 was caught in the explosion!" << std::endl;
-                isPlayer2Dead = true;
-                isMoving2 = false;
-            }
+            affectedPositions.push_back({x, y + i});
         } else {
-            break; // Ra ngoài biên
+            break;
         }
     }
 
     // Nổ sang trái
-    for (int i = 1; ; ++i) { // Vòng lặp vô hạn cho đến khi gặp địa hình
+    for (int i = 1; ; ++i) {
         if (x - i >= 0) {
             if (map[y][x - i] == 0) {
                 map[y][x - i] = 1; // Chuyển đổi thành stone
-                break; // Dừng lại nếu chạm địa hình
+                break;
             }
             map[y][x - i] = 1; // Chuyển đổi thành stone
-            explosions.push_back({x - i, y, std::chrono::steady_clock::now()}); // Thêm hiệu ứng nổ
-
-            // Kiểm tra xem vị trí nổ có trùng với vị trí người chơi không
-            // Kiểm tra xem vị trí nổ có trùng với vị trí người chơi không
-            if (playerX == x - i && playerY == y) {
-                std::cout << "Game Over! Player 1 was caught in the explosion!" << std::endl;
-                isPlayer1Dead = true;
-                isMoving = false;
-            } else if (player2X == x - i && player2Y == y) {
-                std::cout << "Game Over! Player 2 was caught in the explosion!" << std::endl;
-                isPlayer2Dead = true;
-                isMoving2 = false;
-            }
+            affectedPositions.push_back({x - i, y});
         } else {
-            break; // Ra ngoài biên
+            break;
         }
     }
 
     // Nổ sang phải
-    for (int i = 1; ; ++i) { // Vòng lặp vô hạn cho đến khi gặp địa hình
+    for (int i = 1; ; ++i) {
         if (x + i < MAP_WIDTH) {
             if (map[y][x + i] == 0) {
                 map[y][x + i] = 1; // Chuyển đổi thành stone
-                break; // Dừng lại nếu chạm địa hình
+                break;
             }
             map[y][x + i] = 1; // Chuyển đổi thành stone
-            explosions.push_back({x + i, y, std::chrono::steady_clock::now()}); // Thêm hiệu ứng nổ
-
-            // Kiểm tra xem vị trí nổ có trùng với vị trí người chơi không
-            if (playerX == x + i && playerY == y) {
-                std::cout << "Game Over! Player 1 was caught in the explosion!" << std::endl;
-                isPlayer1Dead = true;
-                isMoving = false;
-            } else if (player2X == x + i && player2Y == y) {
-                std::cout << "Game Over! Player 2 was caught in the explosion!" << std::endl;
-                isPlayer2Dead = true;
-                isMoving2 = false;
-            }
+            affectedPositions.push_back({x + i, y});
         } else {
-            break; // Ra ngoài biên
+            break;
+        }
+    }
+
+    // Thêm hiệu ứng nổ vào danh sách
+    for (const auto& pos : affectedPositions) {
+        explosions.push_back({pos.first, pos.second, std::chrono::steady_clock::now()});
+    }
+
+    // Kiểm tra xem có nhân vật nào bị ảnh hưởng bởi vụ nổ không
+    bool player1Caught = false;
+    bool player2Caught = false;
+
+    for (const auto& pos : affectedPositions) {
+        if (playerX == pos.first && playerY == pos.second) {
+            player1Caught = true;
+        }
+        if (player2X == pos.first && player2Y == pos.second) {
+            player2Caught = true;
+        }
+    }
+
+    if (player1Caught && player2Caught) {
+        std::cout << "Game Over! Both players were caught in the explosion!" << std::endl;
+        isPlayer1Dead = true;
+        isPlayer2Dead = true;
+        bothDead = true;
+        isMoving = false;
+        isMoving2 = false;
+    } else {
+        if (player1Caught) {
+            std::cout << "Game Over! Player 1 was caught in the explosion!" << std::endl;
+            isPlayer1Dead = true;
+            isMoving = false;
+        }
+        if (player2Caught) {
+            std::cout << "Game Over! Player 2 was caught in the explosion!" << std::endl;
+            isPlayer2Dead = true;
+            isMoving2 = false;
         }
     }
 }
@@ -312,7 +312,8 @@ void updateBombs(SDL_Renderer* renderer, SDL_Texture* explosionTexture) {
 }
 
 int main(int argc, char* argv[]) {
-    generateRandomMap(map); // Tạo bản đồ ngẫu nhiên
+    // Khởi tạo SDL map
+    generateRandomMap(map);
     if (SDL_Init(SDL_INIT_VIDEO) < 0) {
         std::cerr << "SDL could not initialize! SDL_Error: " << SDL_GetError() << std::endl;
         return -1;
@@ -490,7 +491,20 @@ int main(int argc, char* argv[]) {
         renderBombs(renderer, bombTexture);
         renderExplosions(renderer, explosionTexture);
         // Trong vòng lặp chính hoặc nơi bạn muốn vẽ văn bản
-        if (isPlayer1Dead) {
+        if (bothDead) {
+            // Tính toán kích thước văn bản
+            int textWidth, textHeight;
+            TTF_Font* font = TTF_OpenFont("./materials/font/arial.ttf", 24);
+            TTF_SizeText(font, "Both players are dead!", &textWidth, &textHeight);
+            TTF_CloseFont(font);
+
+            // Tính toán vị trí để vẽ văn bản ở giữa
+            int centerX = (MAP_WIDTH * block_size - textWidth) / 2; // Center X
+            int centerY = (MAP_HEIGHT * block_size - textHeight) / 2; // Center Y
+            renderText(renderer, "Both players are dead!", centerX, centerY);
+        }
+
+        if (isPlayer1Dead && !isPlayer2Dead && !bothDead) {
             // Tính toán kích thước văn bản
             int textWidth, textHeight;
             TTF_Font* font = TTF_OpenFont("./materials/font/arial.ttf", 24);
@@ -505,7 +519,7 @@ int main(int argc, char* argv[]) {
             renderText(renderer, "Player 1 is dead!", centerX, centerY);
         }
 
-        if (isPlayer2Dead) {
+        if (isPlayer2Dead && !isPlayer1Dead && !bothDead) {
             // Tính toán kích thước văn bản
             int textWidth, textHeight;
             TTF_Font* font = TTF_OpenFont("./materials/font/arial.ttf", 24);
