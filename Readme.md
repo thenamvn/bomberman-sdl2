@@ -19,3 +19,4 @@ thì có khả năng thiếu hoặc không tương thích MinGW
 - Tải bản MinGW của CodeBlock tại link này: https://firebasestorage.googleapis.com/v0/b/clouds-caafc.appspot.com/o/MinGW.zip?alt=media&token=a0a7d680-57e9-4fcd-bab5-e5c6d23a1f2b
 - Đổi tên thư mục Mingw cũ(backup) rồi giải nén mingw mới kia là được, khi cần có thể restore lại
 
+"# Bommerman" 
